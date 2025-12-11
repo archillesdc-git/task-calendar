@@ -297,11 +297,15 @@ export default function CalendarPage() {
             >
                 {/* Header */}
                 <div
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 relative"
                     style={{ backgroundColor: colors.primary }}
                 >
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-2xl font-bold text-white">Task Calendar</h1>
+                    {/* Christmas decorations */}
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-2xl animate-bounce" style={{ animationDuration: "2s" }}>🎄</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xl animate-bounce" style={{ animationDuration: "2.5s" }}>🎅</span>
+
+                    <div className="flex items-center gap-4 ml-8">
+                        <h1 className="text-2xl font-bold text-white">🎄 Task Calendar ❄️</h1>
 
                         {/* Month Navigator */}
                         <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg border border-white/30">
@@ -319,11 +323,11 @@ export default function CalendarPage() {
 
                     <button
                         onClick={() => setModalVisible(true)}
-                        className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold"
+                        className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold mr-8"
                         style={{ color: colors.primary }}
                     >
                         <IoAdd size={20} />
-                        Create Task
+                        🎁 Create Task
                     </button>
                 </div>
 
