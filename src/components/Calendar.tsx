@@ -36,7 +36,7 @@ interface Task {
     priority: "low" | "medium" | "high";
     dates: Date[];
     status?: string;
-    userId: string;
+    userId?: string;
 }
 
 export default function CalendarPage() {
@@ -148,7 +148,7 @@ export default function CalendarPage() {
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
     };
 
-    const handleSaveTask = async (task: { title: string; description: string; dates: Date[]; priority: string }) => {
+    const handleSaveTask = async (task: { title: string; description?: string; dates: Date[]; priority: string }) => {
         if (!user) {
             alert("User not logged in");
             return;
@@ -160,7 +160,7 @@ export default function CalendarPage() {
                 const taskRef = doc(db, "tasks", editingTask.id);
                 await updateDoc(taskRef, {
                     title: task.title,
-                    description: task.description,
+                    description: task.description || "",
                     dates: task.dates,
                     priority: task.priority,
                 });

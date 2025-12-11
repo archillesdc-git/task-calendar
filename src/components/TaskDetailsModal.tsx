@@ -9,6 +9,8 @@ interface Task {
     description?: string;
     priority: "low" | "medium" | "high";
     dates: Date[];
+    status?: string;
+    userId?: string;
 }
 
 interface TaskDetailsModalProps {
