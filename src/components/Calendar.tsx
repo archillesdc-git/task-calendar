@@ -334,8 +334,14 @@ export default function CalendarPage() {
                         className="grid grid-cols-7 border-b"
                         style={{ backgroundColor: colors.background, borderColor: colors.border }}
                     >
-                        {WEEKDAYS.map((day) => (
-                            <div key={day} className="py-4 text-center">
+                        {WEEKDAYS.map((day, index) => (
+                            <div
+                                key={day}
+                                className="py-4 text-center"
+                                style={{
+                                    borderRight: index < 6 ? "1px solid rgba(0, 0, 0, 0.4)" : "none",
+                                }}
+                            >
                                 <span className="text-sm font-semibold" style={{ color: colors.text }}>
                                     {day}
                                 </span>
