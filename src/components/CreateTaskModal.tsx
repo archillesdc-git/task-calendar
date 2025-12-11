@@ -14,7 +14,7 @@ interface CreateTaskModalProps {
 
 interface TaskData {
     title: string;
-    description: string;
+    description?: string;
     dates: Date[];
     priority: Priority;
 }
