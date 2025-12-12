@@ -6,6 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import AlarmModal from "@/components/AlarmModal";
 import {
     addDoc,
     collection,
@@ -16,11 +17,12 @@ import {
     where,
     Timestamp,
 } from "firebase/firestore";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
     IoChevronBack,
     IoChevronForward,
     IoAdd,
+    IoTimeOutline,
 } from "react-icons/io5";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,6 +30,26 @@ const MONTHS = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ];
+
+// Helper function to get Philippine time
+const getPhilippineTime = () => {
+    return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+};
+
+// Format time in 12-hour format
+const formatTime12Hour = (date: Date) => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 becomes 12
+    const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+    const secondsStr = seconds < 10 ? "0" + seconds : seconds;
+    return `${hours}:${minutesStr}:${secondsStr} ${ampm}`;
+};
+
+const ALARM_MESSAGE = "Please Time Out The attendance Discord ASAP.";
 
 interface Task {
     id: string;
@@ -56,6 +78,44 @@ export default function CalendarPage() {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Clock & Alarm States
+    const [currentTime, setCurrentTime] = useState<Date>(getPhilippineTime());
+    const [alarmModalVisible, setAlarmModalVisible] = useState(false);
+    const lastAlarmRef = useRef<string | null>(null);
+
+    // Clock update and alarm check
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const phTime = getPhilippineTime();
+            setCurrentTime(phTime);
+
+            // Check for alarm times: 2:00 PM (14:00), 11:00 PM (23:00), and 11:07 PM (23:07) for testing
+            const hours = phTime.getHours();
+            const minutes = phTime.getMinutes();
+            const seconds = phTime.getSeconds();
+
+            const alarmKey = `${hours}:${minutes}`;
+
+            // Trigger alarm at exactly 2:00 PM (14:00) and 11:00 PM (23:00)
+            if (seconds < 10) {
+                if ((hours === 14 && minutes === 0) || (hours === 23 && minutes === 0)) {
+                    // Only trigger if we haven't already triggered for this minute
+                    if (lastAlarmRef.current !== alarmKey) {
+                        lastAlarmRef.current = alarmKey;
+                        setAlarmModalVisible(true);
+                    }
+                }
+            } else {
+                // Reset alarm tracking after the first 5 seconds
+                if (lastAlarmRef.current === alarmKey) {
+                    lastAlarmRef.current = null;
+                }
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     // Fetch tasks from Firestore
     useEffect(() => {
@@ -321,6 +381,23 @@ export default function CalendarPage() {
                         </div>
                     </div>
 
+                    {/* Live Clock Display - Philippine Time */}
+                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border-2 border-black/20 shadow-md">
+                        <IoTimeOutline size={22} color="#000" />
+                        <div className="flex flex-col items-center">
+                            <span className="text-black font-bold text-lg tracking-wider font-mono">
+                                {formatTime12Hour(currentTime)}
+                            </span>
+                            <span className="text-black/60 text-[10px] uppercase tracking-widest">
+                                Philippine Time
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 ml-2" title="Alarms: 2:00 PM & 11:00 PM">
+                            <span className="text-[10px] text-black/80">🔔 2PM</span>
+                            <span className="text-[10px] text-black/80">🔔 11PM</span>
+                        </div>
+                    </div>
+
                     <button
                         onClick={() => setModalVisible(true)}
                         className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold mr-8"
@@ -453,6 +530,12 @@ export default function CalendarPage() {
                 confirmText="Move to Trash"
                 isDestructive={true}
                 isLoading={isDeleting}
+            />
+
+            <AlarmModal
+                visible={alarmModalVisible}
+                onClose={() => setAlarmModalVisible(false)}
+                message={ALARM_MESSAGE}
             />
         </div>
     );
