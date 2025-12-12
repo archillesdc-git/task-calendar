@@ -3,6 +3,7 @@
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import {
     collection,
     query,
@@ -36,6 +37,8 @@ export default function NotificationsModal({ visible, onClose }: NotificationsMo
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
+    const [clearModalVisible, setClearModalVisible] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
 
     // Fetch notifications for current user
     useEffect(() => {
@@ -114,10 +117,15 @@ export default function NotificationsModal({ visible, onClose }: NotificationsMo
         }
     };
 
-    const clearAllNotifications = async () => {
+    const handleClearAllClick = () => {
         if (!user || notifications.length === 0) return;
-        if (!confirm("Clear all notifications?")) return;
+        setClearModalVisible(true);
+    };
 
+    const confirmClearAll = async () => {
+        if (!user || notifications.length === 0) return;
+
+        setIsClearing(true);
         try {
             const batch = writeBatch(db);
             notifications.forEach((notification) => {
@@ -125,8 +133,11 @@ export default function NotificationsModal({ visible, onClose }: NotificationsMo
                 batch.delete(notificationRef);
             });
             await batch.commit();
+            setClearModalVisible(false);
         } catch (error) {
             console.error("Error clearing notifications:", error);
+        } finally {
+            setIsClearing(false);
         }
     };
 
@@ -268,7 +279,7 @@ export default function NotificationsModal({ visible, onClose }: NotificationsMo
                             Mark all read
                         </button>
                         <button
-                            onClick={clearAllNotifications}
+                            onClick={handleClearAllClick}
                             className="flex items-center gap-1 text-sm font-semibold hover:opacity-80"
                             style={{ color: "#FF3B30" }}
                         >
@@ -278,6 +289,18 @@ export default function NotificationsModal({ visible, onClose }: NotificationsMo
                     </div>
                 )}
             </div>
+
+            {/* Clear All Confirmation Modal */}
+            <ConfirmationModal
+                visible={clearModalVisible}
+                onClose={() => setClearModalVisible(false)}
+                onConfirm={confirmClearAll}
+                title="Clear All Notifications?"
+                message="All notifications will be permanently deleted. This action cannot be undone."
+                confirmText="Clear All"
+                isDestructive={true}
+                isLoading={isClearing}
+            />
         </div>
     );
 }

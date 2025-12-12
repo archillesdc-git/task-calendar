@@ -7,6 +7,7 @@ import CreateTaskModal from "@/components/CreateTaskModal";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import AlarmModal from "@/components/AlarmModal";
+import AlertModal from "@/components/AlertModal";
 import {
     addDoc,
     collection,
@@ -84,6 +85,18 @@ export default function CalendarPage() {
     const [alarmModalVisible, setAlarmModalVisible] = useState(false);
     const lastAlarmRef = useRef<string | null>(null);
 
+    // Alert Modal State
+    const [alertModal, setAlertModal] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        type: "info" | "error" | "warning" | "success";
+    }>({ visible: false, title: "", message: "", type: "info" });
+
+    const showAlert = (title: string, message: string, type: "info" | "error" | "warning" | "success" = "error") => {
+        setAlertModal({ visible: true, title, message, type });
+    };
+
     // Clock update and alarm check
     useEffect(() => {
         const interval = setInterval(() => {
@@ -150,7 +163,7 @@ export default function CalendarPage() {
             },
             (error) => {
                 console.error("Firestore listener error:", error);
-                alert("Error fetching tasks: " + error.message);
+                showAlert("Error", "Error fetching tasks: " + error.message, "error");
             }
         );
 
@@ -210,7 +223,7 @@ export default function CalendarPage() {
 
     const handleSaveTask = async (task: { title: string; description?: string; dates: Date[]; priority: string }) => {
         if (!user) {
-            alert("User not logged in");
+            showAlert("Login Required", "Please log in to create tasks", "warning");
             return;
         }
 
@@ -236,7 +249,7 @@ export default function CalendarPage() {
             setEditingTask(null);
         } catch (error) {
             console.error("Error saving task:", error);
-            alert("Failed to save task: " + (error as Error).message);
+            showAlert("Error", "Failed to save task: " + (error as Error).message, "error");
         } finally {
             setIsSaving(false);
         }
@@ -303,7 +316,7 @@ export default function CalendarPage() {
             setDetailsModalVisible(false);
         } catch (error) {
             console.error("Error marking task as done:", error);
-            alert("Failed to mark task as done");
+            showAlert("Error", "Failed to mark task as done", "error");
         }
     };
 
@@ -327,7 +340,7 @@ export default function CalendarPage() {
             setTaskToDelete(null);
         } catch (error) {
             console.error("Error deleting task:", error);
-            alert("Failed to delete task");
+            showAlert("Error", "Failed to delete task", "error");
         } finally {
             setIsDeleting(false);
         }
@@ -536,6 +549,14 @@ export default function CalendarPage() {
                 visible={alarmModalVisible}
                 onClose={() => setAlarmModalVisible(false)}
                 message={ALARM_MESSAGE}
+            />
+
+            <AlertModal
+                visible={alertModal.visible}
+                onClose={() => setAlertModal({ ...alertModal, visible: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
             />
         </div>
     );

@@ -5,6 +5,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { db } from "@/lib/firebase";
 import Header from "@/components/Header";
 import LoginPage from "@/components/LoginPage";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import {
     collection,
     doc,
@@ -57,6 +58,13 @@ export default function NotesPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [showNewFolderInput, setShowNewFolderInput] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
+
+    // Delete confirmation modal states
+    const [deleteFolderModalVisible, setDeleteFolderModalVisible] = useState(false);
+    const [deleteNoteModalVisible, setDeleteNoteModalVisible] = useState(false);
+    const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
+    const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch folders
     useEffect(() => {
@@ -135,25 +143,35 @@ export default function NotesPage() {
         }
     };
 
-    const handleDeleteFolder = async (folderId: string) => {
-        if (!confirm("Delete this folder and all its notes?")) return;
+    const handleDeleteFolderClick = (folderId: string) => {
+        setFolderToDelete(folderId);
+        setDeleteFolderModalVisible(true);
+    };
 
+    const confirmDeleteFolder = async () => {
+        if (!folderToDelete) return;
+
+        setIsDeleting(true);
         try {
             // Delete all notes in the folder
-            const folderNotes = notes.filter((n) => n.folderId === folderId);
+            const folderNotes = notes.filter((n) => n.folderId === folderToDelete);
             for (const note of folderNotes) {
                 await deleteDoc(doc(db, "notes", note.id));
             }
             // Delete the folder
-            await deleteDoc(doc(db, "folders", folderId));
+            await deleteDoc(doc(db, "folders", folderToDelete));
 
-            if (selectedFolder?.id === folderId) {
+            if (selectedFolder?.id === folderToDelete) {
                 setSelectedFolder(null);
                 setSelectedNote(null);
                 setIsEditing(false);
             }
+            setDeleteFolderModalVisible(false);
+            setFolderToDelete(null);
         } catch (error) {
             console.error("Error deleting folder:", error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -203,17 +221,27 @@ export default function NotesPage() {
         }
     };
 
-    const handleDeleteNote = async (noteId: string) => {
-        if (!confirm("Delete this note?")) return;
+    const handleDeleteNoteClick = (noteId: string) => {
+        setNoteToDelete(noteId);
+        setDeleteNoteModalVisible(true);
+    };
 
+    const confirmDeleteNote = async () => {
+        if (!noteToDelete) return;
+
+        setIsDeleting(true);
         try {
-            await deleteDoc(doc(db, "notes", noteId));
-            if (selectedNote?.id === noteId) {
+            await deleteDoc(doc(db, "notes", noteToDelete));
+            if (selectedNote?.id === noteToDelete) {
                 setIsEditing(false);
                 setSelectedNote(null);
             }
+            setDeleteNoteModalVisible(false);
+            setNoteToDelete(null);
         } catch (error) {
             console.error("Error deleting note:", error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -339,7 +367,7 @@ export default function NotesPage() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleDeleteFolder(folder.id);
+                                                    handleDeleteFolderClick(folder.id);
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100"
                                             >
@@ -369,7 +397,7 @@ export default function NotesPage() {
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleDeleteNote(note.id);
+                                                                    handleDeleteNoteClick(note.id);
                                                                 }}
                                                                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100"
                                                             >
@@ -404,7 +432,7 @@ export default function NotesPage() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleDeleteNote(note.id);
+                                                    handleDeleteNoteClick(note.id);
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100"
                                             >
@@ -489,6 +517,36 @@ export default function NotesPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Delete Folder Confirmation Modal */}
+            <ConfirmationModal
+                visible={deleteFolderModalVisible}
+                onClose={() => {
+                    setDeleteFolderModalVisible(false);
+                    setFolderToDelete(null);
+                }}
+                onConfirm={confirmDeleteFolder}
+                title="Delete Folder?"
+                message="This will delete the folder and all its notes. This action cannot be undone."
+                confirmText="Delete Folder"
+                isDestructive={true}
+                isLoading={isDeleting}
+            />
+
+            {/* Delete Note Confirmation Modal */}
+            <ConfirmationModal
+                visible={deleteNoteModalVisible}
+                onClose={() => {
+                    setDeleteNoteModalVisible(false);
+                    setNoteToDelete(null);
+                }}
+                onConfirm={confirmDeleteNote}
+                title="Delete Note?"
+                message="This note will be permanently deleted. This action cannot be undone."
+                confirmText="Delete Note"
+                isDestructive={true}
+                isLoading={isDeleting}
+            />
         </div>
     );
 }

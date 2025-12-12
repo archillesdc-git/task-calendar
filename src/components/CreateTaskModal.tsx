@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "@/context/ThemeContext";
+import AlertModal from "@/components/AlertModal";
 import { IoClose, IoFlag, IoChevronBack, IoChevronForward, IoCloseCircle } from "react-icons/io5";
 import { useState, useEffect } from "react";
 
@@ -40,6 +41,11 @@ export default function CreateTaskModal({
     const [priority, setPriority] = useState<Priority>("medium");
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const { colors } = useTheme();
+    const [alertModal, setAlertModal] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+    }>({ visible: false, title: "", message: "" });
 
     useEffect(() => {
         if (editTask) {
@@ -122,12 +128,12 @@ export default function CreateTaskModal({
 
     const handleSave = () => {
         if (!title.trim()) {
-            alert("Please enter a task title");
+            setAlertModal({ visible: true, title: "Missing Title", message: "Please enter a task title" });
             return;
         }
 
         if (selectedDates.length === 0) {
-            alert("Please select at least one date");
+            setAlertModal({ visible: true, title: "No Date Selected", message: "Please select at least one date" });
             return;
         }
 
@@ -355,6 +361,14 @@ export default function CreateTaskModal({
                     </button>
                 </div>
             </div>
+
+            <AlertModal
+                visible={alertModal.visible}
+                onClose={() => setAlertModal({ ...alertModal, visible: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type="warning"
+            />
         </div>
     );
 }
